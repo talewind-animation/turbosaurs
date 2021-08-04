@@ -67,11 +67,23 @@ def cam_from_metadata(node, cam, anim=True):
 
         task.setProgress( int( float(curTask) / frame_range.frames() * 100 ) )
 
-def bake(anim=True):
-    node = nuke.selectedNode()
+def bake(anim=True, node=None):
+    if not node:
+        node = nuke.selectedNode()
     cam = nuke.toNode('__shotcam__')
     if node.Class() == 'Read':
         nuke.root()['first_frame'].setValue(node['first'].getValue())
         nuke.root()['last_frame'].setValue(node['last'].getValue())
         nuke.frame(node['first'].getValue())
     cam_from_metadata(node, cam, anim=anim)
+
+def bake_cam():
+    ch = nuke.toNode("CH_IN_beauty")
+    bg = nuke.toNode("BG_IN_beauty")
+    if bg:
+        if bg['first'].getValue() == bg['last'].getValue():
+            bake(anim=False, node=ch)
+        else:
+            bake(node=ch)
+    else:
+        bake(node=ch)
