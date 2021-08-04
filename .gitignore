@@ -1,0 +1,8 @@
+*.pyc
+__pycache__
+build/**
+tz_dev/**
+*sheet_updater.exe
+
+# PyCharm
+.idea/**
