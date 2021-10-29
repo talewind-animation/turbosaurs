@@ -21,15 +21,21 @@ from tools.render_settings import RenderLayers
 from mongo_documents import DatabaseConnection, MayaJob, MayaRenderLayer
 
 PROJECT = "Turbosaurs"
+RENDER_DRIVE = "R:\\"
 PROJECTS_PATH = os.path.abspath(os.getenv("PROJECTS_PATH", "Z:/Projects"))
 RENDER_SCENES = os.path.join(PROJECTS_PATH, PROJECT, "Render_scenes")
 MASTER_SCENES = os.path.join(PROJECTS_PATH, "RnD", "masterScene")
 
-RENDERS = os.path.join(PROJECTS_PATH, PROJECT, "Render")
+RENDERS = os.path.join(RENDER_DRIVE, PROJECT)
 DBHOST = os.getenv("DB_HOST", "192.168.99.2")
 UI_FILE = os.path.abspath(os.path.join(
     os.path.dirname(__file__), "ui", "render_setup.ui"))
 
+def get_scene_val(key):
+    try:
+        return pm.fileInfo(key, q=True)
+    except KeyError:
+        return None
 
 class TurbozRenderSetupWindow(SampleMayaUI):
 
@@ -92,6 +98,7 @@ class TurbozRenderSetupWindow(SampleMayaUI):
         self.ui_wgt.refresh_layers_btn.setIcon(QtGui.QIcon(":refresh.png"))
         self.ui_wgt.remove_from_all_btn.setIcon(
             QtGui.QIcon(":deleteRenderPass.png"))
+        self.ui_wgt.from_playback_btn.setIcon(QtGui.QIcon(":nClothCacheReplace.png"))
 
         self.ui_wgt.submite_scene_btn.setIcon(
             QtGui.QIcon(":greasePencilExport.png"))
@@ -107,6 +114,8 @@ class TurbozRenderSetupWindow(SampleMayaUI):
             self.populate_render_layers)
         self.ui_wgt.remove_from_all_btn.clicked.connect(
             self.remove_from_all_layers)
+        self.ui_wgt.from_playback_btn.clicked.connect(
+            self.frames_from_playback)
 
         self.ui_wgt.season_cbx.currentIndexChanged.connect(
             self.populate_episodes)
@@ -211,6 +220,10 @@ class TurbozRenderSetupWindow(SampleMayaUI):
     def remove_from_all_layers(self):
         for layer in self.render_layers:
             layer.remove_from_render_layer()
+
+    def frames_from_playback(self):
+        for layer in self.render_layers:
+            layer.frames_from_playback()
 
     def make_screenshot(self):
         directory, scene = os.path.split(pm.sceneName())
@@ -495,21 +508,27 @@ class TruebozRenderLayer(QtWidgets.QWidget):
         self.layer.renderable.set(self.disable_cbx.isChecked())
 
     def populate_frames(self):
-        try:
-            frames = get_attr_in_layer(
-                "vraySettings.animFrames", self.layer.name())
-        except ValueError:
-            frames = ""
-        if frames:
-            frames = str(frames)
+        frames = get_scene_val("{}_frames".format(self.layer.name()))
+        if not frames:
+            self.frames_from_playback()
         else:
-            frames = ""
+            self.frames_led.setText(frames)
+
+    def frames_from_playback(self):
+        if self.layer.name()=="BG":
+            frames = str(int(pm.playbackOptions(minTime=True, q=True)))
+        else:
+            frames = "{}-{}".format(
+                                    int(pm.playbackOptions(minTime=True, q=True)),
+                                    int(pm.playbackOptions(maxTime=True, q=True))
+                                    )
+
         self.frames_led.setText(frames)
+        self.frames_changed()
 
     def frames_changed(self):
         if self.frames:
-            settings_dict = {"animFrames": self.frames}
-            RSManager.apply_settings_to_layer(settings_dict, self.layer.name())
+            pm.fileInfo("{}_frames".format(self.layer.name()), self.frames)
 
     def find_layer(self, name):
         try:
@@ -520,7 +539,7 @@ class TruebozRenderLayer(QtWidgets.QWidget):
             return layer
 
     def add_to_rl_bg(self, objects):
-        for layer in ["BG", "CH", "FLOOR_AO", "WATER"]:
+        for layer in ["BG", "CH", "VL", "FLOOR_AO", "WATER"]:
             layer = self.find_layer(layer)
             if layer:
                 pm.editRenderLayerMembers(layer, objects)
@@ -529,7 +548,7 @@ class TruebozRenderLayer(QtWidgets.QWidget):
             op.addMembers(objects)
 
     def add_to_rl_ch(self, objects):
-        for layer in ["CH", "FLOOR_AO", "Test"]:
+        for layer in ["CH", "VL", "FLOOR_AO", "Test"]:
             layer = self.find_layer(layer)
             if layer:
                 pm.editRenderLayerMembers(layer, objects)

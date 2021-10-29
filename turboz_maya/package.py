@@ -13,7 +13,8 @@ requires = [
     'mongoengine',
     'ffmpeg',
     'Pillow-1.1.7',
-    'Qt.py'
+    'Qt.py',
+    'deadlineapi',
 ]
 
 def commands():

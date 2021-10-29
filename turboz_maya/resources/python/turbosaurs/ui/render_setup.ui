@@ -244,6 +244,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QPushButton" name="from_playback_btn">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="verticalSpacer_2">
            <property name="orientation">
             <enum>Qt::Vertical</enum>

@@ -55,15 +55,16 @@ class ChangeShot(QtWidgets.QDialog):
         self.create_widgets()
         self.create_layout()
         self.create_connections()
+        self.populate_seasons()
+        self.update_completer()
 
         self.read_last_shot()
 
-    def shot_completer_list(self):
-        blasklist = []
-        season = "season_03"
-        if USERCONFIG:
-            blasklist = USERCONFIG["episode_blacklist"]
-        return ["{}_shot_0".format(e) for e in os.listdir(os.path.join(TZ_COMP, season)) if not e in blasklist]
+    @staticmethod
+    def set_cbox_text(cbox, text):
+        index = cbox.findText(text, QtCore.Qt.MatchFixedString)
+        if index >= 0:
+             cbox.setCurrentIndex(index)
 
     def configure_window(self):
         self.setWindowFlags(
@@ -75,26 +76,53 @@ class ChangeShot(QtWidgets.QDialog):
     def create_widgets(self):
         self.shot_label = QtWidgets.QLabel('Shot Name')
 
+        self.season_lbl = QtWidgets.QLabel('Season:')
+        self.season_cbx = QtWidgets.QComboBox()
+        self.season_cbx.setFixedWidth(120)
+
         self.shot_name_led = QtWidgets.QLineEdit()
-        completer = QtWidgets.QCompleter(self.shot_completer_list())
-        self.shot_name_led.setCompleter(completer)
 
         self.ok_btn = QtWidgets.QPushButton('Ok')
 
     def create_layout(self):
         self.main_lyt = QtWidgets.QVBoxLayout(self)
+        self.season_row = QtWidgets.QHBoxLayout()
         self.shot_row = QtWidgets.QHBoxLayout()
         self.btn_row = QtWidgets.QHBoxLayout()
 
+        self.main_lyt.addLayout(self.season_row)
         self.main_lyt.addLayout(self.shot_row)
         self.main_lyt.addLayout(self.btn_row)
 
+        self.season_row.addWidget(self.season_lbl)
+        self.season_row.addWidget(self.season_cbx)
         self.shot_row.addWidget(self.shot_label)
         self.shot_row.addWidget(self.shot_name_led)
         self.btn_row.addWidget(self.ok_btn)
 
     def create_connections(self):
         self.ok_btn.clicked.connect(self.load_shot)
+        self.season_cbx.currentTextChanged.connect(self.update_completer)
+
+    def populate_seasons(self):
+        self.season_cbx.clear()
+        blasklist = []
+        if USERCONFIG:
+            blasklist = USERCONFIG["season_blacklist"]
+        self.seasons = [s for s in os.listdir(TZ_COMP) if 'season' in s.lower() and not s in blasklist]
+        self.season_cbx.addItems(self.seasons)
+
+    def shot_completer_list(self, season="season_03"):
+        blasklist = []
+        print(season)
+        print(os.path.join(TZ_COMP, season))
+        if USERCONFIG:
+            blasklist = USERCONFIG["episode_blacklist"]
+        return ["{}_shot_0".format(e) for e in os.listdir(os.path.join(TZ_COMP, season)) if not e in blasklist]
+
+    def update_completer(self):
+        completer = QtWidgets.QCompleter(self.shot_completer_list(season=self.season_cbx.currentText()))
+        self.shot_name_led.setCompleter(completer)
 
     def temp_file(self):
         tempdir = tempfile.gettempdir()
@@ -105,29 +133,31 @@ class ChangeShot(QtWidgets.QDialog):
             self.write_shotname(filename=temp_file)
             return temp_file
 
-    def write_shotname(self, filename=None, shname=''):
+    def write_shotname(self, filename=None, season='', shname=''):
         if not filename:
             filename = self.temp_file()
         with open(filename, 'w') as f:
-            json.dump([shname], f)
+            json.dump([shname, season], f)
 
     def read_last_shot(self):
         with open(self.temp_file(), 'r') as f:
-            shot_name = json.load(f)
-        self.shot_name_led.setText(shot_name[0])
+            shot_info = json.load(f)
+        self.shot_name_led.setText(shot_info[0])
+        if len(shot_info)>1:
+            self.set_cbox_text(self.season_cbx, shot_info[1])
 
     def load_shot(self):
         self.shot_name = self.shot_name_led.text()
+        self.season_name = self.season_cbx.currentText()
         self.handle_shot()
-        self.write_shotname(shname = self.shot_name)
+        self.write_shotname(season=self.season_name, shname=self.shot_name)
         self.close()
 
-    def find_ep(self, epname):
-        seasons = [os.path.join(TZ_COMP, f) for f in os.listdir(TZ_COMP) if f.startswith('season_')]
-        for season in seasons:
-            for ep in os.listdir(season):
-                if epname in ep:
-                    return os.path.join(season, ep)
+    def find_ep(self, epname, season_name):
+        season_dir = os.path.join(TZ_COMP, season_name)
+        for ep in os.listdir(season_dir):
+            if epname in ep:
+                return os.path.join(season_dir, ep)
         return None
 
     def make_folder(self, name):
@@ -166,7 +196,7 @@ class ChangeShot(QtWidgets.QDialog):
         num = int(num)
         shotname = '{}_{}'.format(sh, '%03d' % num)
 
-        ep_path = self.find_ep(epname)
+        ep_path = self.find_ep(epname, self.season_name)
         if not ep_path:
             return
 
@@ -193,7 +223,8 @@ class ChangeShot(QtWidgets.QDialog):
         nuke.Root()['name'].setValue(comp_path.replace('\\', '/'))
         nuke.scriptSaveAs(comp_path)
 
-        subprocess.Popen("{} -ep {} -sc {} -m {} -t {}".format(sheet_updater, epname, num, 'nuke', shotname))
+        s, n = self.season_name.split("_")
+        subprocess.Popen("{} -s \"{}\" -ep {} -sc {} -m {} -t {}".format(sheet_updater, "{} {}".format(s.capitalize(), int(n)), epname, num, 'nuke', shotname))
 
 class LoadShot(QtWidgets.QDialog):
     """LoadShot dialog"""

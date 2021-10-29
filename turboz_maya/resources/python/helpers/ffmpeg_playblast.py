@@ -99,6 +99,7 @@ class HrPlayblast(QtCore.QObject):
         "Viewport": [],
         "Geo": ["NURBS Surfaces", "Polygons"],
         "Blast": ["NURBS Surfaces", "Polygons", "Plugin Shapes"],
+        "Blast_lyt": ["NURBS Surfaces", "Polygons", "Plugin Shapes", "Image Planes"],
         "Dynamics": ["NURBS Surfaces", "Polygons", "Dynamics", "Fluids", "nParticles"],
     }
 

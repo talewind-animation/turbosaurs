@@ -66,5 +66,6 @@
     "cmap_brightMult": 1,
     "cmap_gamma": 2.2,
     "globopt_light_doHiddenLights": 0,
+    "noAlpha": 0,
     "relements_enableall": true
 }

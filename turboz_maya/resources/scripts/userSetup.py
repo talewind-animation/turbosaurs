@@ -27,12 +27,14 @@ def on_save(*args):
 
 def create_twa_menu():
     twa_menu = MayaMenu.add_menu("TaleWind")
+    twa_menu.add_command("Animation/Blayblast", "from turbosaurs.playblaster import PlayblasterWindow\nPlayblasterWindow.display()", "Blayblast", "replaceCache.png")
     twa_menu.add_command("Animation/CameraManager", "from tools.camera_tools import CameraManagerWindow\nCameraManagerWindow.display()", "Camera Manager", "CameraDown.png")
-    if department in ["LGT", "LYT"]:
+    if department in ["LGT", "LYT", "ALL"]:
         twa_menu.add_command("Layout/PrepScene", "from turbosaurs.render_setup import TurbozRenderSetup\nTurbozRenderSetup.prep_scene_light()", "Prepare Scene")
         twa_menu.add_command("Lighting/RenderSetup", "from turbosaurs.render_setup import TurbozRenderSetupWindow\nTurbozRenderSetupWindow.display()", "Render Setup", "deadline.png")
+        twa_menu.add_command("Lighting/AssetPreview", "from turbosaurs.asset_preview import AssetPreviewWindow\nAssetPreviewWindow.display()", "Make Preview", "assetpreview.png")
+        twa_menu.add_command("Lighting/LightCreate", "from tools.gaffer import GafferWindow\nGafferWindow.display()", "Light Create", "gaffer.png")
     twa_menu.add_command("Layout/RemoveRef", "from tools.reference_remove import ReferenceRemoveWindow\nReferenceRemoveWindow.display()", "Remove Reference")
-    twa_menu.add_command("Lighting/LightCreate", "from tools.gaffer import GafferWindow\nGafferWindow.display()", "Light Create", "gaffer.png")
     twa_menu.separator()
     twa_menu.add_command("About", "print(\"Hello!\")", icon="info.png")
 

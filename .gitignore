@@ -1,6 +1,6 @@
 *.pyc
 __pycache__
-build/**
+**/build/**
 tz_dev/**
 *sheet_updater.exe
 
